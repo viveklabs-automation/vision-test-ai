@@ -1,8 +1,9 @@
 # Use the official Microsoft Playwright environment as the base image
 FROM mcr.microsoft.com/playwright:v1.45.0-noble
 
-# Set environment to non-interactive during build
+# Set environment to non-interactive during build and declare shared Playwright browser path
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 # Install Xvfb, Fluxbox window manager, x11vnc server, noVNC, and websockify
 RUN apt-get update && apt-get install -y \
