@@ -41,7 +41,10 @@ async function recordSession(startUrl: string, sessionName: string = 'generated_
 
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
-    viewport: { width: 1280, height: 720 }
+    viewport: { width: 1280, height: 720 },
+    locale: 'en-IN',
+    geolocation: { latitude: 20.5937, longitude: 78.9629 },
+    permissions: ['geolocation']
   });
   const page = await context.newPage();
 
@@ -289,10 +292,18 @@ async function recordSession(startUrl: string, sessionName: string = 'generated_
   return new Promise<void>((resolve) => {
     const cleanup = async () => {
       rl.close();
-      await browser.close();
+      try {
+        await browser.close();
+      } catch (e) {}
       console.log('✅ Recording completed and browser closed.');
       resolve();
+      process.exit(0); // Force exit to shut down process.stdin handles in spawned environments
     };
+
+    page.on('close', () => {
+      console.log('⚠️ Browser page closed by user.');
+      cleanup();
+    });
 
     browser.on('disconnected', () => {
       console.log('⚠️ Browser window closed by user.');

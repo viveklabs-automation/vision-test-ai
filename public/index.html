@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisionTestAI Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <span class="logo-icon">🚀</span>
+        <div class="logo-text">
+          <h1>VisionTestAI</h1>
+          <p>Autonomous Multi-Modal QA Studio</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <span class="status-indicator online"></span>
+        <span class="status-text">Cloud Engine Active</span>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+      <!-- Left Panel: Scenarios & Action Console -->
+      <aside class="control-panel glass">
+        <h2>🎯 Session Console</h2>
+
+        <div class="control-group">
+          <label for="record-url">Record URL</label>
+          <input type="text" id="record-url" placeholder="https://example.com" value="https://www.google.com" class="input-text">
+        </div>
+
+        <div class="control-group">
+          <label for="record-session-name">Session Name</label>
+          <input type="text" id="record-session-name" placeholder="my_new_scenario" class="input-text">
+        </div>
+
+        <button id="btn-record" class="btn primary-glow">
+          <span class="btn-icon">🎬</span> Start Recording
+        </button>
+
+        <hr class="divider">
+        
+        <div class="control-group">
+          <label for="scenario-select">Select Test Scenario</label>
+          <div class="select-wrapper">
+            <select id="scenario-select">
+              <option value="" disabled selected>Loading scenarios...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label for="browser-select">Target Browser</label>
+          <div class="select-wrapper">
+            <select id="browser-select">
+              <option value="chrome">Google Chrome (Incognito)</option>
+              <option value="edge">Microsoft Edge (InPrivate)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="btn-compile" class="btn primary">
+            <span class="btn-icon">🔮</span> Compile POM & BDD Files
+          </button>
+          
+          <div class="runner-grid">
+            <button id="btn-run-playwright" class="btn secondary">
+              <span class="btn-icon">🎭</span> Playwright E2E
+            </button>
+            <button id="btn-run-heal" class="btn secondary warning-glow">
+              <span class="btn-icon">🩺</span> Run Self-Heal
+            </button>
+            <button id="btn-run-bdd" class="btn secondary">
+              <span class="btn-icon">🥒</span> Cucumber BDD
+            </button>
+          </div>
+        </div>
+
+        <!-- System Information -->
+        <div class="system-info">
+          <h3>ℹ️ CLI Deployment Info</h3>
+          <ul>
+            <li><strong>Runtime:</strong> Node.js v20+</li>
+            <li><strong>AI Model:</strong> Gemini 3.5 Flash</li>
+            <li><strong>Headless Mode:</strong> Enabled (CI/Cloud)</li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Center & Right: Code Explorer & Console -->
+      <main class="main-content">
+        <!-- Top Half: Code Explorer -->
+        <section class="explorer-section glass">
+          <div class="panel-header">
+            <h2>🏗️ Output Files Explorer</h2>
+            <div class="explorer-actions" style="display: flex; align-items: center; gap: 0.8rem;">
+              <span id="selected-file-label" class="file-path-badge">No file selected</span>
+              <button id="btn-copy-code" class="btn text-btn" style="display: none; padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 4px;">📋 Copy</button>
+            </div>
+          </div>
+          
+          <div class="explorer-grid">
+            <!-- Sidebar: File Tree -->
+            <div class="file-tree-sidebar" id="file-tree">
+              <!-- Scenarios Directory Structure will render here -->
+              <div class="empty-state">No files compiled. Click Compile above.</div>
+            </div>
+            
+            <!-- Code View Panel -->
+            <div class="code-viewer-container">
+              <pre><code id="code-display" class="language-ts">// Your generated page objects, features, specs and step definitions will display here.</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bottom Half: Streamed Terminal Logs -->
+        <section class="terminal-section glass">
+          <div class="panel-header">
+            <h2>📟 Live Execution Log Console</h2>
+            <button id="btn-clear-logs" class="btn text-btn">Clear Logs</button>
+          </div>
+          <div class="terminal-body" id="terminal-output">
+            <div class="terminal-line system-msg">[SYSTEM] Ready for execution. Choose a scenario and run a test test.</div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // Constants
+    const scenarioSelect = document.getElementById('scenario-select');
+    const browserSelect = document.getElementById('browser-select');
+    const fileTree = document.getElementById('file-tree');
+    const codeDisplay = document.getElementById('code-display');
+    const selectedFileLabel = document.getElementById('selected-file-label');
+    const terminalOutput = document.getElementById('terminal-output');
+
+    // Controls
+    const btnRecord = document.getElementById('btn-record');
+    const recordUrl = document.getElementById('record-url');
+    const recordSessionName = document.getElementById('record-session-name');
+    const btnCompile = document.getElementById('btn-compile');
+    const btnPlaywright = document.getElementById('btn-run-playwright');
+    const btnHeal = document.getElementById('btn-run-heal');
+    const btnBdd = document.getElementById('btn-run-bdd');
+    const btnClearLogs = document.getElementById('btn-clear-logs');
+    const btnCopyCode = document.getElementById('btn-copy-code');
+    
+    let selectedScenario = '';
+    let selectedFileContent = '';
+
+    // Load Scenarios
+    async function loadScenarios() {
+      try {
+        const res = await fetch('/api/scenarios');
+        const scenarios = await res.json();
+        scenarioSelect.innerHTML = '';
+        
+        if (scenarios.length === 0) {
+          scenarioSelect.innerHTML = '<option value="" disabled>No scenarios found. Record first.</option>';
+          return;
+        }
+
+        scenarios.forEach((sc, idx) => {
+          const opt = document.createElement('option');
+          opt.value = sc;
+          opt.textContent = sc;
+          if (idx === 0) {
+            opt.selected = true;
+            selectedScenario = sc;
+          }
+          scenarioSelect.appendChild(opt);
+        });
+
+        loadFiles();
+      } catch (err) {
+        logToTerminal(`[ERROR] Failed to load scenarios: ${err.message}`, 'error-msg');
+      }
+    }
+
+    // Load File Tree & Contents
+    async function loadFiles() {
+      try {
+        const res = await fetch('/api/files');
+        const files = await res.json();
+        fileTree.innerHTML = '';
+        
+        if (files.length === 0) {
+          fileTree.innerHTML = '<div class="empty-state">No files compiled. Click Compile.</div>';
+          return;
+        }
+
+        renderFileTree(files, fileTree);
+      } catch (err) {
+        logToTerminal(`[ERROR] Failed to load files: ${err.message}`, 'error-msg');
+      }
+    }
+
+    function renderFileTree(nodes, parentEl) {
+      const ul = document.createElement('ul');
+      ul.className = 'tree-list';
+
+      nodes.forEach(node => {
+        const li = document.createElement('li');
+        li.className = node.isDirectory ? 'tree-folder' : 'tree-file';
+
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = (node.isDirectory ? '📁 ' : '📄 ') + node.name;
+        titleSpan.className = 'tree-node-title';
+        li.appendChild(titleSpan);
+
+        if (node.isDirectory && node.children) {
+          renderFileTree(node.children, li);
+        } else if (!node.isDirectory) {
+          titleSpan.addEventListener('click', () => {
+            // Remove active classes
+            document.querySelectorAll('.tree-node-title').forEach(el => el.classList.remove('active'));
+            titleSpan.classList.add('active');
+            
+            // Show content
+            selectedFileLabel.textContent = `output/${node.path}`;
+            codeDisplay.textContent = node.content;
+            selectedFileContent = node.content;
+            btnCopyCode.style.display = 'block';
+            btnCopyCode.innerHTML = '📋 Copy';
+          });
+        }
+        ul.appendChild(li);
+      });
+      parentEl.appendChild(ul);
+    }
+
+    // Logger
+    function logToTerminal(text, type = '') {
+      const line = document.createElement('div');
+      line.className = `terminal-line ${type}`;
+      line.textContent = text;
+      terminalOutput.appendChild(line);
+      terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    }
+
+    // Compile API
+    btnCompile.addEventListener('click', async () => {
+      selectedScenario = scenarioSelect.value;
+      if (!selectedScenario) {
+        logToTerminal('[WARNING] Please select a scenario first.', 'warning-msg');
+        return;
+      }
+
+      btnCompile.disabled = true;
+      btnCompile.textContent = '🔮 Compiling with Gemini...';
+      logToTerminal(`\n🔮 Starting Gemini compilation for scenario: ${selectedScenario}...`, 'system-msg');
+
+      try {
+        const res = await fetch('/api/compile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionName: selectedScenario })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          logToTerminal('✨ Successfully compiled Page Classes, Playwright specs, Cucumber features, and step definitions!', 'success-msg');
+          await loadFiles();
+        } else {
+          logToTerminal(`❌ Compilation failed: ${data.error}`, 'error-msg');
+        }
+      } catch (err) {
+        logToTerminal(`❌ Error compiling: ${err.message}`, 'error-msg');
+      } finally {
+        btnCompile.disabled = false;
+        btnCompile.innerHTML = '<span class="btn-icon">🔮</span> Compile POM & BDD Files';
+      }
+    });
+
+    // Record API
+    btnRecord.addEventListener('click', async () => {
+      const url = recordUrl.value.trim();
+      const sessionName = recordSessionName.value.trim();
+
+      if (!url || !sessionName) {
+        logToTerminal('[WARNING] Both URL and Session Name are required to record.', 'warning-msg');
+        return;
+      }
+
+      btnRecord.disabled = true;
+      btnRecord.textContent = '🎬 Recording...';
+      logToTerminal(`\n🎬 Launching Playwright browser window for session: ${sessionName}...`, 'system-msg');
+      logToTerminal(`⚠️  Please perform your actions in the browser window, then close the browser when done.`, 'warning-msg');
+
+      try {
+        const res = await fetch('/api/record', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, sessionName })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          logToTerminal(`✨ Recording session [${sessionName}] finished successfully. Action logs and screenshots saved!`, 'success-msg');
+          await loadScenarios();
+        } else {
+          logToTerminal(`❌ Recording failed: ${data.error}`, 'error-msg');
+        }
+      } catch (err) {
+        logToTerminal(`❌ Error recording: ${err.message}`, 'error-msg');
+      } finally {
+        btnRecord.disabled = false;
+        btnRecord.innerHTML = '<span class="btn-icon">🎬</span> Start Recording';
+      }
+    });
+
+    // Run Test API (Streams SSE logs)
+    function runTest(type) {
+      selectedScenario = scenarioSelect.value;
+      if (!selectedScenario) {
+        logToTerminal('[WARNING] Please select a scenario first.', 'warning-msg');
+        return;
+      }
+
+      const browser = browserSelect.value;
+      logToTerminal(`\n🚀 Starting test runner (${type.toUpperCase()}) on [${browser.toUpperCase()}] for session: ${selectedScenario}...`, 'system-msg');
+
+      // Disable buttons
+      setButtonsDisabled(true);
+
+      const sse = new EventSource(`/api/run-test?type=${type}&sessionName=${selectedScenario}&browser=${browser}`);
+      
+      sse.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.log) {
+          logToTerminal(data.log.trim());
+        }
+        if (data.status === 'done') {
+          logToTerminal(`\n🏁 Test Run Finished with exit code: ${data.code}`, data.code === 0 ? 'success-msg' : 'error-msg');
+          sse.close();
+          setButtonsDisabled(false);
+          loadFiles(); // Reload files in case healing updated files
+        }
+      };
+
+      sse.onerror = (err) => {
+        logToTerminal('[ERROR] Server connection closed unexpectedly.', 'error-msg');
+        sse.close();
+        setButtonsDisabled(false);
+      };
+    }
+
+    function setButtonsDisabled(disabled) {
+      btnPlaywright.disabled = disabled;
+      btnHeal.disabled = disabled;
+      btnBdd.disabled = disabled;
+    }
+
+    btnPlaywright.addEventListener('click', () => runTest('playwright'));
+    btnHeal.addEventListener('click', () => runTest('heal'));
+    btnBdd.addEventListener('click', () => runTest('bdd'));
+
+    btnClearLogs.addEventListener('click', () => {
+      terminalOutput.innerHTML = '<div class="terminal-line system-msg">[SYSTEM] Ready for execution.</div>';
+    });
+
+    // Copy Code API
+    btnCopyCode.addEventListener('click', async () => {
+      if (!selectedFileContent) return;
+      try {
+        await navigator.clipboard.writeText(selectedFileContent);
+        btnCopyCode.innerHTML = '✅ Copied!';
+        setTimeout(() => {
+          btnCopyCode.innerHTML = '📋 Copy';
+        }, 1500);
+      } catch (err) {
+        logToTerminal(`[ERROR] Failed to copy code: ${err.message}`, 'error-msg');
+      }
+    });
+
+    // Initial Load
+    scenarioSelect.addEventListener('change', () => {
+      selectedScenario = scenarioSelect.value;
+    });
+
+    loadScenarios();
+  </script>
+</body>
+</html>

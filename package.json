@@ -5,6 +5,8 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "dashboard": "ts-node src/server.ts",
     "record": "ts-node src/record.ts",
     "generate": "ts-node src/generate.ts",
     "heal": "ts-node src/heal.ts",
@@ -14,14 +16,16 @@
     "test": "playwright test"
   },
   "dependencies": {
-    "@google/genai": "^2.17.1",
     "@cucumber/cucumber": "^10.8.0",
+    "@google/genai": "^2.17.1",
     "dotenv": "^16.4.5",
+    "express": "5.2.1",
     "playwright": "^1.49.0"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
     "@playwright/test": "^1.49.0",
+    "@types/express": "5.0.6",
+    "@types/node": "^20.11.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
