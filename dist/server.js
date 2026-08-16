@@ -40,6 +40,7 @@ const express_1 = __importDefault(require("express"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const child_process_1 = require("child_process");
+const http_proxy_1 = __importDefault(require("http-proxy"));
 const generate_1 = require("./generate");
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
@@ -48,6 +49,19 @@ const DATA_DIR = path.join(ROOT_DIR, 'data');
 const OUTPUT_DIR = path.join(ROOT_DIR, 'output');
 app.use(express_1.default.json());
 app.use(express_1.default.static(path.join(ROOT_DIR, 'public')));
+// Create VNC proxy instance
+const proxy = http_proxy_1.default.createProxyServer({});
+proxy.on('error', (err, req, res) => {
+    console.error('VNC Proxy Error:', err.message);
+    if (res && 'writeHead' in res) {
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end('VNC Display Server is initializing. Please refresh in a few seconds...');
+    }
+});
+// Proxy HTTP requests for /vnc to noVNC web interface
+app.use('/vnc', (req, res) => {
+    proxy.web(req, res, { target: 'http://localhost:6080' });
+});
 // Helper to recursively read generated files and content
 function getFileTree(dir, relativePath = '') {
     const result = [];
@@ -67,7 +81,6 @@ function getFileTree(dir, relativePath = '') {
             });
         }
         else {
-            // Avoid loading binary files or logs
             if (item.endsWith('.ts') || item.endsWith('.feature') || item.endsWith('.spec.ts')) {
                 result.push({
                     name: item,
@@ -142,7 +155,7 @@ app.post('/api/compile', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-// 4. GET /api/run-test - Run tests and stream console output via Server-Sent Events (SSE)
+// 5. GET /api/run-test - Run tests and stream console output via Server-Sent Events (SSE)
 app.get('/api/run-test', (req, res) => {
     const type = req.query.type; // 'playwright', 'heal', 'bdd'
     const sessionName = req.query.sessionName;
@@ -154,10 +167,9 @@ app.get('/api/run-test', (req, res) => {
     let cmd = '';
     let args = [];
     if (type === 'playwright') {
-        // For cloud environment run headless, otherwise run headed
-        const headlessFlag = process.env.CI ? '' : '--headed';
+        // Force headed mode since Xvfb virtual display is running in the cloud container
         cmd = 'npx';
-        args = ['playwright', 'test', `output/specs/${sessionName}.spec.ts`, `--project=${browser}`, headlessFlag].filter(Boolean);
+        args = ['playwright', 'test', `output/specs/${sessionName}.spec.ts`, `--project=${browser}`, '--headed'];
     }
     else if (type === 'heal') {
         cmd = 'npx';
@@ -172,7 +184,7 @@ app.get('/api/run-test', (req, res) => {
             '--require', 'output/steps/**/*.ts'
         ];
     }
-    res.write(`data: ${JSON.stringify({ log: `⚡ Executing: ${cmd} ${args.join(' ')}\n\n` })}\n\n`);
+    res.write(`data: ${JSON.stringify({ log: `⚡ Executing (Headed mode): ${cmd} ${args.join(' ')}\n\n` })}\n\n`);
     const env = { ...process.env, BROWSER: browser };
     const child = (0, child_process_1.spawn)(cmd, args, { shell: true, cwd: ROOT_DIR, env });
     child.stdout.on('data', (data) => {
@@ -186,6 +198,12 @@ app.get('/api/run-test', (req, res) => {
         res.end();
     });
 });
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`🚀 Web Dashboard server running at http://localhost:${PORT}`);
+});
+// Upgrade WebSocket connections for websockify (VNC binary traffic)
+server.on('upgrade', (req, socket, head) => {
+    if (req.url?.startsWith('/websockify')) {
+        proxy.ws(req, socket, head, { target: 'ws://localhost:6080' });
+    }
 });

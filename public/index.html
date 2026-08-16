@@ -108,7 +108,12 @@
             </div>
           </div>
           
-          <div class="explorer-grid">
+          <div class="tabs-header" style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; flex-shrink: 0;">
+            <button id="tab-code" class="tab-btn active" style="padding: 0.5rem 1rem; background: transparent; border: 0; border-bottom: 2px solid var(--accent-color); color: var(--text-main); font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">💻 Code Explorer</button>
+            <button id="tab-vnc" class="tab-btn" style="padding: 0.5rem 1rem; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--text-muted); font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">🖥️ Live Cloud Browser (VNC)</button>
+          </div>
+          
+          <div id="panel-code" class="tab-panel explorer-grid" style="display: flex;">
             <!-- Sidebar: File Tree -->
             <div class="file-tree-sidebar" id="file-tree">
               <!-- Scenarios Directory Structure will render here -->
@@ -119,6 +124,10 @@
             <div class="code-viewer-container">
               <pre><code id="code-display" class="language-ts">// Your generated page objects, features, specs and step definitions will display here.</code></pre>
             </div>
+          </div>
+
+          <div id="panel-vnc" class="tab-panel" style="display: none; flex: 1; min-height: 0;">
+            <iframe id="vnc-frame" src="" style="width: 100%; height: 100%; border: 0; border-radius: 8px; background: #000;" allowfullscreen></iframe>
           </div>
         </section>
 
@@ -387,6 +396,41 @@
     // Initial Load
     scenarioSelect.addEventListener('change', () => {
       selectedScenario = scenarioSelect.value;
+    });
+
+    // Tab Switching Logic
+    const tabCode = document.getElementById('tab-code');
+    const tabVnc = document.getElementById('tab-vnc');
+    const panelCode = document.getElementById('panel-code');
+    const panelVnc = document.getElementById('panel-vnc');
+    const vncFrame = document.getElementById('vnc-frame');
+
+    tabCode.addEventListener('click', () => {
+      tabCode.classList.add('active');
+      tabCode.style.borderBottomColor = 'var(--accent-color)';
+      tabCode.style.color = 'var(--text-main)';
+      
+      tabVnc.classList.remove('active');
+      tabVnc.style.borderBottomColor = 'transparent';
+      tabVnc.style.color = 'var(--text-muted)';
+      
+      panelCode.style.display = 'flex';
+      panelVnc.style.display = 'none';
+      vncFrame.src = '';
+    });
+
+    tabVnc.addEventListener('click', () => {
+      tabVnc.classList.add('active');
+      tabVnc.style.borderBottomColor = 'var(--accent-color)';
+      tabVnc.style.color = 'var(--text-main)';
+      
+      tabCode.classList.remove('active');
+      tabCode.style.borderBottomColor = 'transparent';
+      tabCode.style.color = 'var(--text-muted)';
+      
+      panelCode.style.display = 'none';
+      panelVnc.style.display = 'flex';
+      vncFrame.src = '/vnc/vnc.html?autoconnect=true&resize=scale&reconnect=true';
     });
 
     loadScenarios();
