@@ -223,7 +223,8 @@ const server = app.listen(PORT, () => {
 
 // Upgrade WebSocket connections for websockify (VNC binary traffic)
 server.on('upgrade', (req, socket, head) => {
-  if (req.url?.startsWith('/websockify')) {
+  if (req.url?.includes('websockify')) {
+    req.url = '/'; // websockify expects the websocket connection at root
     proxy.ws(req, socket, head, { target: 'ws://localhost:6080' });
   }
 });
