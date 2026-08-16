@@ -24,8 +24,8 @@ function startVirtualScreen() {
       });
       fluxbox.unref();
 
-      console.log('🔒 Starting x11vnc server...');
-      const x11vnc = spawn('x11vnc', ['-display', ':99', '-N', '-forever', '-shared'], {
+      console.log('🔒 Starting x11vnc server on port 5900...');
+      const x11vnc = spawn('x11vnc', ['-display', ':99', '-rfbport', '5900', '-forever', '-shared'], {
         detached: true,
         stdio: 'ignore'
       });
