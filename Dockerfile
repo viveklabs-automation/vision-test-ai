@@ -28,9 +28,6 @@ COPY . .
 # Compile TypeScript to JavaScript
 RUN npm run build
 
-# Make the entrypoint script executable
-RUN chmod +x entrypoint.sh
-
 # Expose the dashboard port
 EXPOSE 3000
 
