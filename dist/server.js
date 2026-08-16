@@ -66,7 +66,7 @@ function startVirtualScreen() {
             });
             x11vnc.unref();
             console.log('🌐 Starting websockify / noVNC on port 6080...');
-            const websockify = (0, child_process_1.spawn)('websockify', ['--web', '/usr/share/novnc', '6080', 'localhost:5900'], {
+            const websockify = (0, child_process_1.spawn)('websockify', ['--web', '/usr/share/novnc', '6080', '127.0.0.1:5900'], {
                 detached: true,
                 stdio: 'ignore'
             });
@@ -97,7 +97,7 @@ proxy.on('error', (err, req, res) => {
 });
 // Proxy HTTP requests for /vnc to noVNC web interface
 app.use('/vnc', (req, res) => {
-    proxy.web(req, res, { target: 'http://localhost:6080' });
+    proxy.web(req, res, { target: 'http://127.0.0.1:6080' });
 });
 // Helper to recursively read generated files and content
 function getFileTree(dir, relativePath = '') {
@@ -242,6 +242,6 @@ const server = app.listen(PORT, () => {
 server.on('upgrade', (req, socket, head) => {
     if (req.url?.includes('websockify')) {
         req.url = '/'; // websockify expects the websocket connection at root
-        proxy.ws(req, socket, head, { target: 'ws://localhost:6080' });
+        proxy.ws(req, socket, head, { target: 'ws://127.0.0.1:6080' });
     }
 });
