@@ -4,7 +4,8 @@
   "description": "Multi-modal AI vision-driven Playwright test generator",
   "main": "src/index.ts",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "node dist/server.js",
+    "cli": "ts-node src/index.ts",
     "build": "tsc",
     "dashboard": "ts-node src/server.ts",
     "record": "ts-node src/record.ts",
