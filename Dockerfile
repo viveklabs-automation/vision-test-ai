@@ -39,5 +39,5 @@ ENV CI=true
 ENV PORT=3000
 ENV DISPLAY=:99
 
-# Launch using the entrypoint startup script
-CMD ["./entrypoint.sh"]
+# Launch the Express server directly
+CMD ["node", "dist/server.js"]

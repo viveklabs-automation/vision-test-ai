@@ -42,6 +42,43 @@ const fs = __importStar(require("fs"));
 const child_process_1 = require("child_process");
 const http_proxy_1 = __importDefault(require("http-proxy"));
 const generate_1 = require("./generate");
+// Programmatically start Xvfb and VNC display servers in CI/Cloud Docker container
+function startVirtualScreen() {
+    if (process.env.CI === 'true') {
+        console.log('🖥️ Cloud environment detected. Starting Xvfb virtual display (:99)...');
+        try {
+            const xvfb = (0, child_process_1.spawn)('Xvfb', [':99', '-screen', '0', '1280x720x24', '-ac', '+extension', 'GLX', '+render', '-noreset'], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            xvfb.unref();
+            process.env.DISPLAY = ':99';
+            console.log('🪟 Starting Fluxbox window manager...');
+            const fluxbox = (0, child_process_1.spawn)('fluxbox', [], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            fluxbox.unref();
+            console.log('🔒 Starting x11vnc server...');
+            const x11vnc = (0, child_process_1.spawn)('x11vnc', ['-display', ':99', '-N', '-forever', '-shared'], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            x11vnc.unref();
+            console.log('🌐 Starting websockify / noVNC on port 6080...');
+            const websockify = (0, child_process_1.spawn)('websockify', ['--web', '/usr/share/novnc', '6080', 'localhost:5900'], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            websockify.unref();
+            console.log('✅ Virtual display stack successfully initialized.');
+        }
+        catch (err) {
+            console.error('⚠️ Warning: Failed to start virtual display stack:', err.message);
+        }
+    }
+}
+startVirtualScreen();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 const ROOT_DIR = path.join(__dirname, '..');
