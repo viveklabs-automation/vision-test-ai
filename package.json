@@ -1,0 +1,28 @@
+{
+  "name": "vision-test-ai",
+  "version": "1.0.0",
+  "description": "Multi-modal AI vision-driven Playwright test generator",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "record": "ts-node src/record.ts",
+    "generate": "ts-node src/generate.ts",
+    "heal": "ts-node src/heal.ts",
+    "bdd": "cucumber-js output/features/**/*.feature --require-module ts-node/register --require output/steps/**/*.ts",
+    "bdd:parallel": "ts-node src/run_bdd_parallel.ts",
+    "clean": "ts-node src/clean.ts",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "@google/genai": "^2.17.1",
+    "@cucumber/cucumber": "^10.8.0",
+    "dotenv": "^16.4.5",
+    "playwright": "^1.49.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@playwright/test": "^1.49.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
