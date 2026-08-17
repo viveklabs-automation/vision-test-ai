@@ -2,6 +2,12 @@
 
 An autonomous, multi-modal AI-driven QA developer studio that translates user interaction flows and Chrome DevTools recordings into production-ready Page Object Model (POM) classes, Playwright test specs, and Cucumber BDD suites with built-in visual self-healing.
 
+[![Live Demo](https://img.shields.io/badge/Demo-Live%20on%20Render-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://vision-test-ai.onrender.com)
+[![AI Model](https://img.shields.io/badge/AI%20Model-Gemini%203.6%20Flash-orange?style=for-the-badge&logo=google)](https://ai.google.dev/)
+[![Framework](https://img.shields.io/badge/Automation-Playwright%20%2B%20Cucumber-green?style=for-the-badge&logo=playwright)](https://playwright.dev/)
+
+🔗 **Live Demo URL**: [https://vision-test-ai.onrender.com](https://vision-test-ai.onrender.com)
+
 ---
 
 ## 📌 Problem Statement
@@ -62,7 +68,7 @@ You can generate test artifacts using either the **Web Dashboard Studio** or the
    ```bash
    npm run dashboard
    ```
-2. Open `http://localhost:3000` in your browser.
+2. Open `http://localhost:3000` (or the Live Demo: [https://vision-test-ai.onrender.com](https://vision-test-ai.onrender.com)).
 3. Drag & drop (or click to browse) your exported `.json` file in the **Upload Chrome Recorder Flow** zone.
 4. **Gemini 3.6 Flash** automatically parses the flow and generates:
    - **Modular Page Objects**: `output/pages/*.ts` (reusing existing page classes if already defined).
@@ -115,6 +121,16 @@ When a test step fails during execution (e.g. broken locator, shifted element, o
 2. The self-healing engine transmits the screenshot, error log, and failing POM class to **Gemini 3.6 Flash**.
 3. Gemini identifies the root cause and updates the locator/wait logic in `output/pages/[PageName].ts`.
 4. The test automatically re-executes against the browser until green (up to 3 attempts), with live progress updates in the log console!
+
+---
+
+## 📸 Studio Screenshots
+
+### 1. Ingesting Chrome Recorder Flows & AI Compilation
+![Compilation & Auto-Pilot in Action](docs/screenshots/dashboard_compilation.png)
+
+### 2. Output Files Explorer & Autonomous Self-Healing Execution
+![Artifact Explorer & Self-Healing Execution](docs/screenshots/dashboard_execution_and_healing.png)
 
 ---
 
