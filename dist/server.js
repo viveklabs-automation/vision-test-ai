@@ -312,10 +312,11 @@ app.get('/api/run-test', (req, res) => {
     res.flushHeaders();
     let cmd = '';
     let args = [];
+    const isCloudEnv = process.env.CI === 'true' || process.env.RENDER === 'true' || (process.platform === 'linux' && !process.env.DISPLAY);
+    const headedArgs = isCloudEnv ? [] : ['--headed'];
     if (type === 'playwright') {
-        // Force headed mode since Xvfb virtual display is running in the cloud container
         cmd = 'npx';
-        args = ['playwright', 'test', `output/specs/${sessionName}.spec.ts`, `--project=${browser}`, '--headed'];
+        args = ['playwright', 'test', `output/specs/${sessionName}.spec.ts`, `--project=${browser}`, ...headedArgs];
     }
     else if (type === 'heal') {
         cmd = 'npx';
@@ -330,7 +331,8 @@ app.get('/api/run-test', (req, res) => {
             '--require', 'output/steps/**/*.ts'
         ];
     }
-    res.write(`data: ${JSON.stringify({ log: `⚡ Executing (Headed mode): ${cmd} ${args.join(' ')}\n\n` })}\n\n`);
+    const modeLabel = isCloudEnv ? 'Headless Cloud mode' : 'Headed mode';
+    res.write(`data: ${JSON.stringify({ log: `⚡ Executing (${modeLabel}): ${cmd} ${args.join(' ')}\n\n` })}\n\n`);
     const env = { ...process.env, BROWSER: browser };
     const child = (0, child_process_1.spawn)(cmd, args, { shell: true, cwd: ROOT_DIR, env });
     child.stdout.on('data', (data) => {

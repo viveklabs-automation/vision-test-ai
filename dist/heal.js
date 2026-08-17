@@ -176,7 +176,9 @@ function runPlaywrightTests(targetPath, browser = 'chrome') {
         const extraArgs = process.argv.slice(2).join(' ');
         const testTarget = targetPath || extraArgs;
         const projectFlag = testTarget.includes('--project') ? '' : `--project=${browser}`;
-        const cmd = `npx playwright test --headed ${testTarget} ${projectFlag}`.trim();
+        const isCloudEnv = process.env.CI === 'true' || process.env.RENDER === 'true' || (process.platform === 'linux' && !process.env.DISPLAY);
+        const headedFlag = isCloudEnv ? '' : '--headed';
+        const cmd = `npx playwright test ${headedFlag} ${testTarget} ${projectFlag}`.replace(/\s+/g, ' ').trim();
         console.log(`🚀 Running ${cmd}...`);
         (0, child_process_1.exec)(cmd, { cwd: ROOT_DIR }, (error, stdout, stderr) => {
             resolve({
