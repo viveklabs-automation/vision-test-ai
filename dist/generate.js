@@ -43,8 +43,17 @@ const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const OUTPUT_DIR = path.join(__dirname, '..', 'output');
+function ensureDirectories() {
+    if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(OUTPUT_DIR)) {
+        fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+    }
+}
 // Ensure baseline Cucumber step files exist (world.ts, hooks.ts, common_steps.ts)
 function ensureCommonStepFiles() {
+    ensureDirectories();
     const stepsDir = path.join(OUTPUT_DIR, 'steps');
     if (!fs.existsSync(stepsDir)) {
         fs.mkdirSync(stepsDir, { recursive: true });
@@ -419,6 +428,7 @@ import { CustomWorld } from './world';
         url: step.url || '',
         selector: step.selectors ? step.selectors[0]?.[0] || '' : ''
     }));
+    ensureDirectories();
     const dummyActionsPath = path.join(DATA_DIR, `${sessionName}_actions.json`);
     fs.writeFileSync(dummyActionsPath, JSON.stringify(dummyActions, null, 2), 'utf-8');
     if (!matchesFound) {

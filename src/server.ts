@@ -83,6 +83,19 @@ const ROOT_DIR = path.join(__dirname, '..');
 const DATA_DIR = path.join(ROOT_DIR, 'data');
 const OUTPUT_DIR = path.join(ROOT_DIR, 'output');
 
+// Guarantee runtime directories and baseline BDD files exist
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(OUTPUT_DIR)) {
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+}
+try {
+  ensureCommonStepFiles();
+} catch (e) {
+  console.warn('Could not initialize common step files on startup:', e);
+}
+
 app.use(express.json());
 app.use(express.static(path.join(ROOT_DIR, 'public')));
 
