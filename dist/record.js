@@ -302,6 +302,14 @@ async function recordSession(startUrl, sessionName = 'generated_test') {
             console.log('⚠️ Browser window closed by user.');
             cleanup();
         });
+        process.on('SIGINT', async () => {
+            console.log('⚠️ Received SIGINT. Cleaning up...');
+            await cleanup();
+        });
+        process.on('SIGTERM', async () => {
+            console.log('⚠️ Received SIGTERM. Cleaning up...');
+            await cleanup();
+        });
         rl.question('Press Enter or type "q" and Enter to stop recording...\n', () => {
             cleanup();
         });

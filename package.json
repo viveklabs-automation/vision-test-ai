@@ -11,6 +11,7 @@
     "record": "ts-node src/record.ts",
     "generate": "ts-node src/generate.ts",
     "heal": "ts-node src/heal.ts",
+    "pipeline": "ts-node src/pipeline.ts",
     "bdd": "cucumber-js output/features/**/*.feature --require-module ts-node/register --require output/steps/**/*.ts",
     "bdd:parallel": "ts-node src/run_bdd_parallel.ts",
     "clean": "ts-node src/clean.ts",

@@ -97,7 +97,7 @@ async function queryGeminiToHeal(context) {
         throw new Error('GEMINI_API_KEY environment variable is not defined in .env');
     }
     const ai = new genai_1.GoogleGenAI({ apiKey });
-    const modelName = 'gemini-3.5-flash';
+    const modelName = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
     const contents = [];
     // Add the failure screenshot if it exists
     if (context.screenshotPath && fs.existsSync(context.screenshotPath)) {
@@ -171,10 +171,12 @@ function parseAndApplyPatches(text) {
         console.warn('⚠️ Warning: No file changes parsed from Gemini response. Gemini output was:\n', text);
     }
 }
-function runPlaywrightTests(targetPath) {
+function runPlaywrightTests(targetPath, browser = 'chrome') {
     return new Promise((resolve) => {
         const extraArgs = process.argv.slice(2).join(' ');
-        const cmd = `npx playwright test --headed ${targetPath || extraArgs}`.trim();
+        const testTarget = targetPath || extraArgs;
+        const projectFlag = testTarget.includes('--project') ? '' : `--project=${browser}`;
+        const cmd = `npx playwright test --headed ${testTarget} ${projectFlag}`.trim();
         console.log(`🚀 Running ${cmd}...`);
         (0, child_process_1.exec)(cmd, { cwd: ROOT_DIR }, (error, stdout, stderr) => {
             resolve({
@@ -185,7 +187,7 @@ function runPlaywrightTests(targetPath) {
         });
     });
 }
-async function runHealLoop(targetPath) {
+async function runHealLoop(targetPath, browser = 'chrome') {
     const maxRetries = 3;
     let attempt = 0;
     while (attempt < maxRetries) {
@@ -198,10 +200,10 @@ async function runHealLoop(targetPath) {
             }
             catch (e) { }
         }
-        const { code, stdout, stderr } = await runPlaywrightTests(targetPath);
+        const { code, stdout, stderr } = await runPlaywrightTests(targetPath, browser);
         if (code === 0) {
             console.log('✅ Success! Playwright tests passed completely.');
-            process.exit(0);
+            return { success: true, attempts: attempt };
         }
         console.warn(`❌ Playwright test run failed on attempt ${attempt}.`);
         // Gather error info
@@ -221,13 +223,18 @@ async function runHealLoop(targetPath) {
         }
         catch (err) {
             console.error('❌ Self-healing request failed:', err.message || err);
-            process.exit(1);
+            return { success: false, attempts: attempt, error: err.message || String(err) };
         }
     }
     console.error(`❌ Maximum self-healing attempts (${maxRetries}) reached. Tests are still failing.`);
-    process.exit(1);
+    return { success: false, attempts: maxRetries, error: 'Maximum self-healing attempts reached' };
 }
-// Run loop
+// Run loop if called directly from CLI
 if (require.main === module) {
-    runHealLoop().catch(console.error);
+    runHealLoop().then((result) => {
+        process.exit(result.success ? 0 : 1);
+    }).catch((err) => {
+        console.error(err);
+        process.exit(1);
+    });
 }

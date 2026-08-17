@@ -27,12 +27,12 @@ async function verifyConnection() {
   }
 
   console.log('✅ Found GEMINI_API_KEY in .env.');
-  console.log('🤖 Attemping handshake with Gemini API (gemini-3.5-flash)...');
+  console.log('🤖 Attemping handshake with Gemini API (gemini-3.6-flash)...');
 
   try {
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
       contents: 'Respond with the single word: "CONNECTED"'
     });
 

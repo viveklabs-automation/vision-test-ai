@@ -20,9 +20,14 @@
           <p>Autonomous Multi-Modal QA Studio</p>
         </div>
       </div>
-      <div class="header-status">
-        <span class="status-indicator online"></span>
-        <span class="status-text">Cloud Engine Active</span>
+      <div class="header-actions">
+        <div class="header-status">
+          <span class="status-indicator online"></span>
+          <span class="status-text">Cloud Engine Active</span>
+        </div>
+        <button id="btn-clear-all" class="btn btn-clear-header" title="Clear all generated files, logs, and start fresh">
+          <span class="btn-icon">🗑️</span> Clear Everything
+        </button>
       </div>
     </header>
 
@@ -33,18 +38,26 @@
         <h2>🎯 Session Console</h2>
 
         <div class="control-group">
-          <label for="record-url">Record URL</label>
-          <input type="text" id="record-url" placeholder="https://example.com" value="https://www.google.com" class="input-text">
+          <label>Upload Chrome Recorder Flow</label>
+          <div class="upload-zone" id="upload-zone">
+            <span class="upload-icon">📤</span>
+            <span class="upload-text">Drag & drop Chrome Recorder JSON here</span>
+            <span class="upload-subtext">or click to choose file</span>
+            <input type="file" id="file-recorder-json" accept=".json" style="display: none;">
+          </div>
+          
+          <!-- Auto-Pilot Toggle -->
+          <div class="autopilot-toggle-container">
+            <div class="autopilot-label">
+              <span class="autopilot-title">⚡ Auto-Pilot Mode</span>
+              <span class="autopilot-desc">Auto-Compile ➔ Run ➔ Self-Heal</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="toggle-autopilot" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
         </div>
-
-        <div class="control-group">
-          <label for="record-session-name">Session Name</label>
-          <input type="text" id="record-session-name" placeholder="my_new_scenario" class="input-text">
-        </div>
-
-        <button id="btn-record" class="btn primary-glow">
-          <span class="btn-icon">🎬</span> Start Recording
-        </button>
 
         <hr class="divider">
         
@@ -67,7 +80,22 @@
           </div>
         </div>
 
+        <!-- Pipeline Progress Stepper Banner -->
+        <div class="pipeline-status-banner" id="pipeline-stepper" style="display: none;">
+          <div class="step-item" id="step-compile"><span>1. Compile</span></div>
+          <span class="step-arrow">➔</span>
+          <div class="step-item" id="step-test"><span>2. Run Test</span></div>
+          <span class="step-arrow">➔</span>
+          <div class="step-item" id="step-heal"><span>3. Self-Heal</span></div>
+          <span class="step-arrow">➔</span>
+          <div class="step-item" id="step-done"><span>4. Passed</span></div>
+        </div>
+
         <div class="action-buttons">
+          <button id="btn-autopilot-run" class="btn btn-autopilot">
+            <span class="btn-icon">🚀</span> Run Full Auto-Pilot
+          </button>
+
           <button id="btn-compile" class="btn primary">
             <span class="btn-icon">🔮</span> Compile POM & BDD Files
           </button>
@@ -90,7 +118,7 @@
           <h3>ℹ️ CLI Deployment Info</h3>
           <ul>
             <li><strong>Runtime:</strong> Node.js v20+</li>
-            <li><strong>AI Model:</strong> Gemini 3.5 Flash</li>
+            <li><strong>AI Model:</strong> Gemini 3.6 Flash</li>
             <li><strong>Headless Mode:</strong> Enabled (CI/Cloud)</li>
           </ul>
         </div>
@@ -108,11 +136,6 @@
             </div>
           </div>
           
-          <div class="tabs-header" style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; flex-shrink: 0;">
-            <button id="tab-code" class="tab-btn active" style="padding: 0.5rem 1rem; background: transparent; border: 0; border-bottom: 2px solid var(--accent-color); color: var(--text-main); font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">💻 Code Explorer</button>
-            <button id="tab-vnc" class="tab-btn" style="padding: 0.5rem 1rem; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--text-muted); font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">🖥️ Live Cloud Browser (VNC)</button>
-          </div>
-          
           <div id="panel-code" class="tab-panel explorer-grid" style="display: flex;">
             <!-- Sidebar: File Tree -->
             <div class="file-tree-sidebar" id="file-tree">
@@ -124,10 +147,6 @@
             <div class="code-viewer-container">
               <pre><code id="code-display" class="language-ts">// Your generated page objects, features, specs and step definitions will display here.</code></pre>
             </div>
-          </div>
-
-          <div id="panel-vnc" class="tab-panel" style="display: none; flex: 1; min-height: 0;">
-            <iframe id="vnc-frame" src="" style="width: 100%; height: 100%; border: 0; border-radius: 8px; background: #000;" allowfullscreen></iframe>
           </div>
         </section>
 
@@ -155,18 +174,60 @@
     const terminalOutput = document.getElementById('terminal-output');
 
     // Controls
-    const btnRecord = document.getElementById('btn-record');
-    const recordUrl = document.getElementById('record-url');
-    const recordSessionName = document.getElementById('record-session-name');
     const btnCompile = document.getElementById('btn-compile');
     const btnPlaywright = document.getElementById('btn-run-playwright');
     const btnHeal = document.getElementById('btn-run-heal');
     const btnBdd = document.getElementById('btn-run-bdd');
     const btnClearLogs = document.getElementById('btn-clear-logs');
     const btnCopyCode = document.getElementById('btn-copy-code');
+    const btnAutopilotRun = document.getElementById('btn-autopilot-run');
+    const toggleAutopilot = document.getElementById('toggle-autopilot');
+    
+    // Stepper elements
+    const pipelineStepper = document.getElementById('pipeline-stepper');
+    const stepCompile = document.getElementById('step-compile');
+    const stepTest = document.getElementById('step-test');
+    const stepHeal = document.getElementById('step-heal');
+    const stepDone = document.getElementById('step-done');
     
     let selectedScenario = '';
     let selectedFileContent = '';
+
+    // Stepper State Manager
+    function updateStepper(step, status = 'active') {
+      pipelineStepper.style.display = 'flex';
+      const steps = [stepCompile, stepTest, stepHeal, stepDone];
+      
+      if (step === 'reset') {
+        steps.forEach(s => {
+          s.className = 'step-item';
+        });
+        pipelineStepper.style.display = 'none';
+        return;
+      }
+
+      if (step === 'compile') {
+        stepCompile.className = 'step-item active';
+        stepTest.className = 'step-item';
+        stepHeal.className = 'step-item';
+        stepDone.className = 'step-item';
+      } else if (step === 'test') {
+        stepCompile.className = 'step-item done';
+        stepTest.className = 'step-item active';
+        stepHeal.className = 'step-item';
+        stepDone.className = 'step-item';
+      } else if (step === 'heal') {
+        stepCompile.className = 'step-item done';
+        stepTest.className = 'step-item done';
+        stepHeal.className = 'step-item active';
+        stepDone.className = 'step-item';
+      } else if (step === 'done') {
+        stepCompile.className = 'step-item done';
+        stepTest.className = 'step-item done';
+        stepHeal.className = 'step-item done';
+        stepDone.className = 'step-item done';
+      }
+    }
 
     // Load Scenarios
     async function loadScenarios() {
@@ -292,42 +353,168 @@
       }
     });
 
-    // Record API
-    btnRecord.addEventListener('click', async () => {
-      const url = recordUrl.value.trim();
-      const sessionName = recordSessionName.value.trim();
+    // Constants for upload
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-recorder-json');
+    
+    // Polling states
+    let isReplaying = false;
 
-      if (!url || !sessionName) {
-        logToTerminal('[WARNING] Both URL and Session Name are required to record.', 'warning-msg');
+    // Chrome Recorder Upload Zone Interaction
+    uploadZone.addEventListener('click', () => {
+      if (isReplaying) return;
+      fileInput.click();
+    });
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (isReplaying) return;
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      if (isReplaying) return;
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleUploadedFile(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleUploadedFile(files[0]);
+        fileInput.value = ''; // Allow uploading same file again
+      }
+    });
+
+    async function handleUploadedFile(file) {
+      if (!file.name.endsWith('.json')) {
+        logToTerminal('[WARNING] Please upload a valid Chrome Recorder .json file.', 'warning-msg');
         return;
       }
 
-      btnRecord.disabled = true;
-      btnRecord.textContent = '🎬 Recording...';
-      logToTerminal(`\n🎬 Launching Playwright browser window for session: ${sessionName}...`, 'system-msg');
-      logToTerminal(`⚠️  Please perform your actions in the browser window, then close the browser when done.`, 'warning-msg');
+      const sessionName = file.name.replace('.json', '').replace(/[^a-zA-Z0-9_]/g, '_');
+      const isAutoPilot = toggleAutopilot.checked;
+
+      logToTerminal(`\n📥 Uploaded flow "${file.name}". Derived Session Name: "${sessionName}"`, 'system-msg');
 
       try {
-        const res = await fetch('/api/record', {
+        const jsonContent = await file.text();
+        const parsed = JSON.parse(jsonContent);
+        if (!parsed.steps || !Array.isArray(parsed.steps)) {
+          throw new Error('JSON structure is missing standard steps array.');
+        }
+
+        setButtonsDisabled(true);
+        isReplaying = true;
+        uploadZone.classList.add('uploading');
+        uploadZone.querySelector('.upload-text').textContent = 'Compiling artifacts with AI...';
+
+        updateStepper('compile');
+        logToTerminal(`🤖 Phase 1: Sending Recorder JSON directly to Gemini for POM & BDD compilation...`, 'system-msg');
+
+        const res = await fetch('/api/upload-recorder', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, sessionName })
+          body: JSON.stringify({ jsonContent, sessionName })
         });
         const data = await res.json();
 
         if (data.success) {
-          logToTerminal(`✨ Recording session [${sessionName}] finished successfully. Action logs and screenshots saved!`, 'success-msg');
+          logToTerminal(`✨ Directly compiled POM Page Classes, Playwright specs, Cucumber features, and step definitions under "${sessionName}"!`, 'success-msg');
+          
+          resetReplayUI();
           await loadScenarios();
+          
+          // Auto select scenario
+          scenarioSelect.value = sessionName;
+          selectedScenario = sessionName;
+          
+          // Load files in tree to show the newly generated artifacts!
+          await loadFiles();
+
+          // If Auto-Pilot is enabled, immediately proceed to Phase 2: Run & Self-Heal!
+          if (isAutoPilot) {
+            logToTerminal(`\n⚡ Auto-Pilot Active: Automatically launching Headed Execution & Self-Healing loop...`, 'system-msg');
+            runAutoPilot(sessionName);
+          } else {
+            updateStepper('reset');
+            setButtonsDisabled(false);
+          }
         } else {
-          logToTerminal(`❌ Recording failed: ${data.error}`, 'error-msg');
+          logToTerminal(`❌ Direct compilation failed: ${data.error}`, 'error-msg');
+          updateStepper('reset');
+          resetReplayUI();
+          setButtonsDisabled(false);
         }
       } catch (err) {
-        logToTerminal(`❌ Error recording: ${err.message}`, 'error-msg');
-      } finally {
-        btnRecord.disabled = false;
-        btnRecord.innerHTML = '<span class="btn-icon">🎬</span> Start Recording';
+        logToTerminal(`❌ Error parsing or compiling file: ${err.message}`, 'error-msg');
+        updateStepper('reset');
+        resetReplayUI();
+        setButtonsDisabled(false);
       }
-    });
+    }
+
+    function resetReplayUI() {
+      isReplaying = false;
+      uploadZone.classList.remove('uploading');
+      uploadZone.querySelector('.upload-text').textContent = 'Drag & drop Chrome Recorder JSON here';
+    }
+
+    // Auto-Pilot Pipeline (Compile -> Run -> Self-Heal)
+    function runAutoPilot(session) {
+      const scenario = session || scenarioSelect.value;
+      if (!scenario) {
+        logToTerminal('[WARNING] Please select a scenario first.', 'warning-msg');
+        return;
+      }
+
+      const browser = browserSelect.value;
+      logToTerminal(`\n🚀 [Auto-Pilot] Commencing end-to-end execution for "${scenario}" on ${browser.toUpperCase()}...`, 'system-msg');
+
+      setButtonsDisabled(true);
+      updateStepper('test');
+
+      const sse = new EventSource(`/api/autopilot-stream?sessionName=${scenario}&browser=${browser}`);
+
+      sse.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.log) {
+          const logText = data.log.trim();
+          logToTerminal(logText);
+
+          // Detect healing state in logs to update visual stepper
+          if (logText.includes('Run & Heal Cycle') || logText.includes('Requesting self-healing') || logText.includes('Applied self-healing')) {
+            updateStepper('heal');
+          }
+        }
+        if (data.status === 'done') {
+          if (data.code === 0) {
+            updateStepper('done');
+            logToTerminal(`\n🎉 [Auto-Pilot Success] Test suite compiled, executed, and verified green!`, 'success-msg');
+          } else {
+            logToTerminal(`\n🏁 Auto-Pilot finished with exit code: ${data.code}`, 'error-msg');
+          }
+          sse.close();
+          setButtonsDisabled(false);
+          loadFiles(); // Reload files in tree to show healed code
+        }
+      };
+
+      sse.onerror = (err) => {
+        logToTerminal('[ERROR] Auto-Pilot stream closed unexpectedly.', 'error-msg');
+        sse.close();
+        setButtonsDisabled(false);
+      };
+    }
 
     // Run Test API (Streams SSE logs)
     function runTest(type) {
@@ -342,6 +529,8 @@
 
       // Disable buttons
       setButtonsDisabled(true);
+      if (type === 'heal') updateStepper('heal');
+      else updateStepper('test');
 
       const sse = new EventSource(`/api/run-test?type=${type}&sessionName=${selectedScenario}&browser=${browser}`);
       
@@ -351,7 +540,12 @@
           logToTerminal(data.log.trim());
         }
         if (data.status === 'done') {
-          logToTerminal(`\n🏁 Test Run Finished with exit code: ${data.code}`, data.code === 0 ? 'success-msg' : 'error-msg');
+          if (data.code === 0) {
+            updateStepper('done');
+            logToTerminal(`\n🏁 Test Run Finished with exit code: ${data.code}`, 'success-msg');
+          } else {
+            logToTerminal(`\n🏁 Test Run Finished with exit code: ${data.code}`, 'error-msg');
+          }
           sse.close();
           setButtonsDisabled(false);
           loadFiles(); // Reload files in case healing updated files
@@ -366,17 +560,21 @@
     }
 
     function setButtonsDisabled(disabled) {
+      btnAutopilotRun.disabled = disabled;
+      btnCompile.disabled = disabled;
       btnPlaywright.disabled = disabled;
       btnHeal.disabled = disabled;
       btnBdd.disabled = disabled;
     }
 
+    btnAutopilotRun.addEventListener('click', () => runAutoPilot(scenarioSelect.value));
     btnPlaywright.addEventListener('click', () => runTest('playwright'));
     btnHeal.addEventListener('click', () => runTest('heal'));
     btnBdd.addEventListener('click', () => runTest('bdd'));
 
     btnClearLogs.addEventListener('click', () => {
       terminalOutput.innerHTML = '<div class="terminal-line system-msg">[SYSTEM] Ready for execution.</div>';
+      updateStepper('reset');
     });
 
     // Copy Code API
@@ -393,44 +591,38 @@
       }
     });
 
-    // Initial Load
-    scenarioSelect.addEventListener('change', () => {
-      selectedScenario = scenarioSelect.value;
-    });
-
-    // Tab Switching Logic
-    const tabCode = document.getElementById('tab-code');
-    const tabVnc = document.getElementById('tab-vnc');
-    const panelCode = document.getElementById('panel-code');
-    const panelVnc = document.getElementById('panel-vnc');
-    const vncFrame = document.getElementById('vnc-frame');
-
-    tabCode.addEventListener('click', () => {
-      tabCode.classList.add('active');
-      tabCode.style.borderBottomColor = 'var(--accent-color)';
-      tabCode.style.color = 'var(--text-main)';
+    // Clear Everything API
+    const btnClearAll = document.getElementById('btn-clear-all');
+    btnClearAll.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to clear all generated files and reset the studio?')) {
+        return;
+      }
       
-      tabVnc.classList.remove('active');
-      tabVnc.style.borderBottomColor = 'transparent';
-      tabVnc.style.color = 'var(--text-muted)';
+      btnClearAll.disabled = true;
+      btnClearAll.innerHTML = '<span class="btn-icon">⏳</span> Clearing...';
+      logToTerminal('\n🧹 Clearing all generated POM, BDD, spec files, and session data...', 'system-msg');
       
-      panelCode.style.display = 'flex';
-      panelVnc.style.display = 'none';
-      vncFrame.src = '';
-    });
-
-    tabVnc.addEventListener('click', () => {
-      tabVnc.classList.add('active');
-      tabVnc.style.borderBottomColor = 'var(--accent-color)';
-      tabVnc.style.color = 'var(--text-main)';
-      
-      tabCode.classList.remove('active');
-      tabCode.style.borderBottomColor = 'transparent';
-      tabCode.style.color = 'var(--text-muted)';
-      
-      panelCode.style.display = 'none';
-      panelVnc.style.display = 'flex';
-      vncFrame.src = '/vnc/vnc.html?autoconnect=true&resize=scale&reconnect=true';
+      try {
+        const res = await fetch('/api/clear', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          logToTerminal('✨ Workspace cleared successfully! Clean baseline initialized.', 'success-msg');
+          await loadScenarios();
+          await loadFiles();
+          codeDisplay.textContent = '// Your generated page objects, features, specs and step definitions will display here.';
+          selectedFileLabel.textContent = 'No file selected';
+          selectedFileContent = '';
+          btnCopyCode.style.display = 'none';
+          updateStepper('reset');
+        } else {
+          logToTerminal(`❌ Clear failed: ${data.error}`, 'error-msg');
+        }
+      } catch (err) {
+        logToTerminal(`❌ Error clearing workspace: ${err.message}`, 'error-msg');
+      } finally {
+        btnClearAll.disabled = false;
+        btnClearAll.innerHTML = '<span class="btn-icon">🗑️</span> Clear Everything';
+      }
     });
 
     loadScenarios();

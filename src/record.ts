@@ -310,6 +310,16 @@ async function recordSession(startUrl: string, sessionName: string = 'generated_
       cleanup();
     });
 
+    process.on('SIGINT', async () => {
+      console.log('⚠️ Received SIGINT. Cleaning up...');
+      await cleanup();
+    });
+
+    process.on('SIGTERM', async () => {
+      console.log('⚠️ Received SIGTERM. Cleaning up...');
+      await cleanup();
+    });
+
     rl.question('Press Enter or type "q" and Enter to stop recording...\n', () => {
       cleanup();
     });
