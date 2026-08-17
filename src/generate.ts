@@ -52,10 +52,16 @@ import { CustomWorld } from './world';
 setDefaultTimeout(60000);
 
 Before({ timeout: 60000 }, async function (this: CustomWorld) {
-  const channel = process.env.BROWSER === 'edge' ? 'msedge' : 'chrome';
-  const args = channel === 'msedge' ? ['--inprivate'] : ['--incognito'];
+  const isCloud = process.env.CI === 'true' || process.env.RENDER === 'true';
+  const channel = isCloud ? undefined : (process.env.BROWSER === 'edge' ? 'msedge' : 'chrome');
+  const args = ['--no-sandbox', '--disable-setuid-sandbox'];
+  if (process.env.BROWSER === 'edge') {
+    args.push('--inprivate');
+  } else {
+    args.push('--incognito');
+  }
   
-  this.browser = await chromium.launch({ headless: false, channel, args });
+  this.browser = await chromium.launch({ headless: isCloud, channel, args });
   this.context = await this.browser.newContext();
   this.page = await this.context.newPage();
 });

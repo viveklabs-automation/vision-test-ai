@@ -24,7 +24,7 @@ COPY package*.json ./
 RUN npm ci
 
 # Download Chromium browser binaries matching the installed Playwright version
-RUN npx playwright install chromium
+RUN npx playwright install --with-deps chromium
 
 # Copy all project source code
 COPY . .

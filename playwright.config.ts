@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const isSingleProject = process.argv.some(arg => arg.startsWith('--project') || arg === '-p');
+const isCloudEnv = process.env.CI === 'true' || process.env.RENDER === 'true';
 
 export default defineConfig({
   testDir: './output',
@@ -22,9 +23,9 @@ export default defineConfig({
       name: 'chrome',
       use: { 
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
+        ...(isCloudEnv ? {} : { channel: 'chrome' }),
         launchOptions: {
-          args: ['--incognito'] // Open Chrome visually in Incognito
+          args: ['--incognito', '--no-sandbox', '--disable-setuid-sandbox']
         }
       },
     },
@@ -32,9 +33,9 @@ export default defineConfig({
       name: 'msedge',
       use: { 
         ...devices['Desktop Edge'],
-        channel: 'msedge',
+        ...(isCloudEnv ? {} : { channel: 'msedge' }),
         launchOptions: {
-          args: ['--inprivate'] // Open Edge visually in InPrivate
+          args: ['--inprivate', '--no-sandbox', '--disable-setuid-sandbox']
         }
       },
     },
